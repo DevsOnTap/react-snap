@@ -74,7 +74,13 @@ const defaultOptions = {
   //# another feature creep
   // tribute to Netflix Server Side Only React https://twitter.com/NetflixUIE/status/923374215041912833
   // but this will also remove code which registers service worker
-  removeScriptTags: false
+  removeScriptTags: false,
+  
+  // Callbacks
+
+  // file containing a callback function, 
+  // which will be called every time json file is fetched
+  onJsonFetch: null
 };
 
 /**
@@ -142,6 +148,34 @@ const normalizePath = path => (path === "/" ? "/" : path.replace(/\/$/, ""));
 
 /**
  *
+ * @param {string} filePath
+ * @param {string} callbackName
+ * @return function | null
+ */
+const getCallbackFunctionFromFile = (filePath, callbackName) => {
+  // If user passed a callback option, 
+  // we'll try to open the file and get the method
+  let callback = null;
+
+  if (filePath) {
+    try {
+      callback = require(filePath);
+
+      if (typeof callback !== 'function') {
+        console.log(`⚠️  warning: ${ callbackName } file "${ filePath }" does not export a function`);
+        callback = null;
+      }
+    } catch (e) {
+      console.log(`⚠️  warning: opening ${ callbackName } file "${ filePath }" failed`);
+      console.log(e);
+    }
+  }
+
+  return callback;
+}
+
+/**
+ *
  * @param {{page: Page, basePath: string}} opt
  */
 const preloadResources = opt => {
@@ -152,11 +186,15 @@ const preloadResources = opt => {
     cacheAjaxRequests,
     preconnectThirdParty,
     http2PushManifest,
-    ignoreForPreload
+    ignoreForPreload,
+    onJsonFetch
   } = opt;
   const ajaxCache = {};
   const http2PushManifestItems = [];
   const uniqueResources = new Set();
+
+  const onJsonFetchCallback = getCallbackFunctionFromFile(onJsonFetch, 'onJsonFetch');
+
   page.on("response", async response => {
     const responseUrl = response.url();
     if (/^data:|blob:/i.test(responseUrl)) return;
@@ -179,9 +217,20 @@ const preloadResources = opt => {
             document.body.appendChild(linkTag);
           }, route);
         }
-      } else if (cacheAjaxRequests && ct.includes("json")) {
+      } else if (ct.includes("json") && (cacheAjaxRequests || onJsonFetchCallback)) {
+        // json files can be cached, or passed to a user callback
+
         const json = await response.json();
-        ajaxCache[route] = json;
+
+        // cache request in memory 
+        if (cacheAjaxRequests) {
+          ajaxCache[route] = json;
+        }
+
+        // pass json to a user callback
+        if (onJsonFetchCallback) {
+          onJsonFetchCallback(route, json);
+        }
       } else if (http2PushManifest && /\.(js)$/.test(responseUrl)) {
         const fileName = url
           .parse(responseUrl)
@@ -705,7 +754,8 @@ const run = async (userOptions, { fs } = { fs: nativeFs }) => {
       const {
         preloadImages,
         cacheAjaxRequests,
-        preconnectThirdParty
+        preconnectThirdParty,
+        onJsonFetch
       } = options;
       if (
         preloadImages ||
@@ -721,7 +771,8 @@ const run = async (userOptions, { fs } = { fs: nativeFs }) => {
             cacheAjaxRequests,
             preconnectThirdParty,
             http2PushManifest,
-            ignoreForPreload: options.ignoreForPreload
+            ignoreForPreload: options.ignoreForPreload,
+            onJsonFetch
           }
         );
         ajaxCache[route] = ac;
