@@ -157,6 +157,11 @@ const getCallbackFunctionFromFile = (filePath, callbackName) => {
   // we'll try to open the file and get the method
   let callback = null;
 
+  const appDir = path.dirname(require.main.filename);
+  console.log('----------------------');
+  console.log(appDir, require.main.filename);
+  console.log('----------------------');
+
   if (filePath) {
     try {
       callback = require(filePath);

@@ -131,7 +131,7 @@ Not all options are documented yet, but you can check `defaultOptions` in `index
 
 * `onJsonFetch` 
 
-  Called every time JSON file is fetched.
+  Called every time JSON file is fetched, with `route` and `json` passed to it.
   
   It needs to be a string, path to the file which contains a callback function. Function needs to be file's default export. 
 
@@ -146,8 +146,8 @@ Not all options are documented yet, but you can check `defaultOptions` in `index
   Example of the script:
 
   ```js
-  function onJsonFetch(json) {
-    console.log('onJsonFetch callback', json);
+  function onJsonFetch(route, json) {
+    console.log('onJsonFetch callback', route, json);
   }
 
   module.exports = onJsonFetch;
