@@ -159,7 +159,7 @@ const getCallbackFunctionFromFile = (filePath, callbackName) => {
 
   const appDir = path.dirname(require.main.filename);
   console.log('----------------------');
-  console.log(appDir, require.main.filename);
+  console.log(process.cwd(), appDir, require.main.filename);
   console.log('----------------------');
 
   if (filePath) {
