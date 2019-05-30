@@ -158,13 +158,10 @@ const getCallbackFunctionFromFile = (filePath, callbackName) => {
   let callback = null;
 
   const appDir = path.dirname(require.main.filename);
-  console.log('----------------------');
-  console.log(process.cwd(), appDir, require.main.filename);
-  console.log('----------------------');
 
   if (filePath) {
     try {
-      callback = require(filePath);
+      callback = require(`${ process.cwd() }/${ filePath }`);
 
       if (typeof callback !== 'function') {
         console.log(`⚠️  warning: ${ callbackName } file "${ filePath }" does not export a function`);
