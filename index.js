@@ -75,10 +75,10 @@ const defaultOptions = {
   // tribute to Netflix Server Side Only React https://twitter.com/NetflixUIE/status/923374215041912833
   // but this will also remove code which registers service worker
   removeScriptTags: false,
-  
+
   // Callbacks
 
-  // file containing a callback function, 
+  // file containing a callback function,
   // which will be called every time json file is fetched
   onJsonFetch: null
 };
@@ -153,7 +153,7 @@ const normalizePath = path => (path === "/" ? "/" : path.replace(/\/$/, ""));
  * @return function | null
  */
 const getCallbackFunctionFromFile = (filePath, callbackName) => {
-  // If user passed a callback option, 
+  // If user passed a callback option,
   // we'll try to open the file and get the method
   let callback = null;
 
@@ -196,6 +196,27 @@ const preloadResources = opt => {
   const onJsonFetchCallback = getCallbackFunctionFromFile(onJsonFetch, 'onJsonFetch');
   page.on("response", async response => {
     const responseUrl = response.url();
+    const responseStatus = response.status();
+
+    // Throwing an error if status is 4.x.x or 5.x.x
+    if (responseStatus >= 400) {
+      throw new Error(`Error with ${ responseUrl } - status code ${ responseStatus } was returned`);
+    }
+
+    /* requests that goes trought react-snap are:
+      - api requests
+      - images
+      - fonts
+      - styles
+      - js
+      - google analytics.js
+      - sentry if there is an error with requests mentioned above
+    */
+    // Throwing an error if sentry catches some issue
+    if (responseUrl.indexOf('sentry.io') > -1) {
+      throw new Error('Some page has an issue - see log above');
+    }
+
     if (/^data:|blob:/i.test(responseUrl)) return;
     const ct = response.headers()["content-type"] || "";
     const route = responseUrl.replace(basePath, "");
